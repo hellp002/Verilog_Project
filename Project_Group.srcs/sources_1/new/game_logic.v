@@ -22,8 +22,9 @@
 
 module game_logic(
         output reg [11:0] rgb,
-        output led,
         output wire [3:0] red,
+        output p1_win,
+        output p2_win,
         input clk,
         input reset,
         input video_on,
@@ -34,7 +35,6 @@ module game_logic(
     );
     
     wire refresh_tick;
-    reg led;
     reg [9:0] p1x, p1y, p2x, p2y;
     reg [9:0] p1y_next, p2y_next;
     reg [9:0] ballx, bally , ballx_dir_next, bally_dir_next, ballx_dir_reg, bally_dir_reg ;
@@ -46,8 +46,8 @@ module game_logic(
     
     localparam BALL_SIZE = 7;
     localparam BOARDER_WIDTH = 10-1;
-    parameter POS_MOVE = 2;
-    parameter NEG_MOVE = -2; 
+    parameter POS_MOVE = 1;
+    parameter NEG_MOVE = -1; 
     localparam HEIGHT = 480-1;
     localparam WIDTH = 640-1;
     localparam PADDLE_L = 50-1;
@@ -88,13 +88,14 @@ module game_logic(
     
     // updater
     always@(posedge clk) begin
-         if (reset)begin
+         if (reset || p1_win || p2_win)begin
             p1y = 230;
             p2y = 230;
             ballx = 316;
             bally = 236;
             bally_dir_reg = POS_MOVE;
             ballx_dir_reg = POS_MOVE;
+            buffer = 4'b0000;
          end else begin
             p1y = p1y_next;
             p2y = p2y_next;
@@ -121,11 +122,13 @@ module game_logic(
     assign ball_b = ball_t + BALL_SIZE;
     
     wire collide_bot,collide_top;
+    wire p1_win,p2_win;
     assign collide_p1 = (p1_left <= ball_l) && (ball_l <= p1_right) && (p1_top <= ball_t) && (ball_t <= p1_bottom);
     assign collide_p2 = (p2_left <= ball_r) && (ball_r <= p2_right) && (p2_top <= ball_b) && (ball_b <= p2_bottom);
     assign collide_bot = (ball_b > (B_BOT - POS_MOVE)) ? 1 : 0;
     assign collide_top = (ball_t < (B_TOP + BOARDER_WIDTH - NEG_MOVE)) ? 1: 0;
-    
+    assign p1_win = ball_r > 630;
+    assign p2_win = ball_l < 20;
     // ball rom
     always @*
         case(rom_addr)
@@ -156,11 +159,9 @@ module game_logic(
         end   
         else if (collide_p1) begin
             ballx_dir_next = POS_MOVE;
-            led = 1;
         end
         else if (collide_p2) begin
             ballx_dir_next = NEG_MOVE;
-            led = 0;
         end
     end 
     

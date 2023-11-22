@@ -56,7 +56,7 @@ module segment(
           4'b1101 : s = 7'b0100001;   // d
           4'b1110 : s = 7'b0000110;   // E
           4'b1111 : s = 7'b0001110;   // F
-          default : s = 7'b1000000;   // 04
+          default : s = 7'b1000000;   // 0
           
       endcase
 				
