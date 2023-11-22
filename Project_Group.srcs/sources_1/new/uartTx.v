@@ -35,7 +35,7 @@ module uartTx(
     reg [7:0] buffer;
     reg active;
     
-    always@(posedge clk or posedge reset) begin
+    always@(posedge clk) begin
             if (reset) begin
                 active = 1'b0;
                 p1_control = 2'b00;
