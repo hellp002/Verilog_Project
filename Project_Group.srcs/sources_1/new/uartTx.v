@@ -24,6 +24,7 @@ module uartTx(
         output reg [1:0] p1_control,
         output reg [1:0] p2_control,
         output active,
+        output reg led,
         input reset,
         input busy,
         input clk,
@@ -36,11 +37,16 @@ module uartTx(
     reg active;
     
     always@(posedge clk) begin
+    /*
             if (reset) begin
                 active = 1'b0;
                 p1_control = 2'b00;
                 p2_control = 2'b00;
-            end else begin
+                led = 0;
+            end
+            
+      */ 
+                led = 1;
                 if (last_status && !busy && (din == 8'd79 || din == 8'd111 || din == 8'd108 || din == 8'd76 || din == 8'd87 || din == 8'd119 || din == 8'd83 || din == 8'd115 ) ) begin
                     case(din) 
                         8'd79: p2_control = 2'b10;
@@ -58,7 +64,7 @@ module uartTx(
                 end
                 counter <= (read == 1 ) ? counter + 1: 0;
                 last_status <= busy;
-           end
+           
     end
     
     

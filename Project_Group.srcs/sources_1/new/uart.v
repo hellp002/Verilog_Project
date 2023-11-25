@@ -24,6 +24,7 @@ module uart(
         output p1_control,
         output p2_control,
         output active,
+        output led,
         input wire bitIn,
         input wire clk,
         input reset
@@ -36,6 +37,6 @@ module uart(
     wire active;
     buadGenerator f1(buad,clk);
     uartRx(rxOut,ready,buad,bitIn);
-    uartTx(p1_control,p2_control,active,reset,ready,buad,rxOut);
+    uartTx(p1_control,p2_control,active,led,reset,ready,buad,rxOut);
     
 endmodule

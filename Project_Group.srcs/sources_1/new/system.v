@@ -22,7 +22,6 @@
 
 module system(
 		input wire clk,
-		input wire [11:0] sw,
 		input wire bitIn,
 		input wire reset,
 		output wire hsync, vsync,
@@ -38,8 +37,12 @@ module system(
 	localparam X = 640;
 	localparam Y = 480;
 	wire [4:0] tmp;
+	wire game_on;
 	wire [4:0] led;
 	wire [11:0] rgb;
+	reg [11:0] rgb_reg,rgb_next;
+	wire [1:0] text_on;
+	wire [11:0] text_rgb;
 	wire [3:0] d1_p1;
 	wire [3:0] d0_p1;
 	wire [3:0] d1_p2;
@@ -62,17 +65,12 @@ module system(
         clk_div f1(tclk[i + 1],tclk[i]);
         end
     endgenerate
-	wire [11:0] SW;
 	wire RESET;
-    generate for (i = 0; i < 12; i = i + 1) begin
-        bounce b0(SW[i],sw[i],tclk[23]);
-        end
-    endgenerate
 	debounce r0(RESET,reset,tclk[0],tclk[22]);
 	
 	
 	always@(posedge clk) begin
-	   if (RESET) begin
+	   if (reset) begin
 	       isPlay = 1'b0; 
 	       
 	   end
@@ -90,20 +88,39 @@ module system(
 	   end
 	end
 	
+	always@(posedge clk) begin
+	   if (p_tick)
+	       rgb_reg = rgb_next;
+	end
+	
 	// video status output from vga_sync to tell when to route out rgb signal to DAC
 	wire video_on;
-	counter af(.d1_p1(d1_p1), .d0_p1(d0_p1), .d1_p2(d1_p2), .d0_p2(d0_p2), .p1_win(p1_win), .p2_win(p2_win), .clk(clk), .reset(RESET));
+	counter af(.d1_p1(d1_p1), .d0_p1(d0_p1), .d1_p2(d1_p2), .d0_p2(d0_p2), .p1_win(p1_win), .p2_win(p2_win), .clk(clk), .reset(reset));
 	
 	display gg(.choice(an), .segment(seg), .dot(dp), .d3(d1_p1), .d2(d0_p1), .d1(d1_p2), .d0(d0_p2), .clk(tclk[18]));
 	
-    uart f2(p1_control,p2_control,active,bitIn,clk,RESET);
+    uart f2(p1_control,p2_control,active,led[4],bitIn,clk,reset);
         // instantiate vga_sync
     vga_sync vga_sync_unit (.clk(clk), .reset(1'b0), .hsync(hsync), .vsync(vsync),
                                 .video_on(video_on), .p_tick(p_tick), .x(x), .y(y));
    
         // rgb buffer
         
-    game_logic g_unit (.rgb(rgb_game), .red(tmp[3:0]) ,.p1_win(p1_win), .p2_win(p2_win) , .clk(clk), .reset(!isPlay), .video_on(video_on), .p1_control(p1_control), .p2_control(p2_control), .x(x), .y(y));
+    game_logic g_unit (.rgb(rgb_game), .red(tmp[3:0]) , .game_on(game_on),.p1_win(p1_win), .p2_win(p2_win) , .clk(clk), .reset(!isPlay), .video_on(video_on), .p1_control(p1_control), .p2_control(p2_control), .x(x), .y(y));
         // output
-    assign rgb = rgb_game;
+    pong_text pt(.clk(clk), .d1_p1(d1_p1), .d0_p1(d0_p1), .d1_p2(d1_p2), .d0_p2(d0_p2), .x(x), .y(y) , .text_on(text_on),.text_rgb(text_rgb));
+        
+    always @*
+        if(~video_on)
+            rgb_next = 12'h000; // blank
+        else begin
+            if (game_on)
+                rgb_next = rgb_game;
+            else if (text_on[1] || text_on[0])
+                rgb_next = text_rgb;
+            else 
+                rgb_next = 12'h109;
+        end
+            
+    assign rgb = rgb_reg;      
 endmodule

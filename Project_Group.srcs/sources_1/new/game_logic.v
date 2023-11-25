@@ -23,6 +23,7 @@
 module game_logic(
         output reg [11:0] rgb,
         output wire [3:0] red,
+        output wire game_on,
         output p1_win,
         output p2_win,
         input clk,
@@ -88,7 +89,7 @@ module game_logic(
     
     // updater
     always@(posedge clk) begin
-         if (reset || p1_win || p2_win)begin
+         if (reset || p1_win || p2_win )begin // 
             p1y = 230;
             p2y = 230;
             ballx = 316;
@@ -121,7 +122,7 @@ module game_logic(
     assign ball_r = ball_l + BALL_SIZE;
     assign ball_b = ball_t + BALL_SIZE;
     
-    wire collide_bot,collide_top;
+    wire collide_bot,collide_top,collide_p1,collide_p2;
     wire p1_win,p2_win;
     assign collide_p1 = (p1_left <= ball_l) && (ball_l <= p1_right) && (p1_top <= ball_t) && (ball_t <= p1_bottom);
     assign collide_p2 = (p2_left <= ball_r) && (ball_r <= p2_right) && (p2_top <= ball_b) && (ball_b <= p2_bottom);
@@ -181,9 +182,7 @@ module game_logic(
       end
     end
     
-    wire render_p1, render_p2, render_b1, render_b2;
-    
-    
+    wire render_ball,render_p1, render_p2, render_b1, render_b2;
     
     assign rom_addr = y[2:0] - bally[2:0];   // 3-bit address
     assign rom_col = x[2:0] - ballx[2:0];    // 3-bit column index
@@ -194,7 +193,7 @@ module game_logic(
     assign render_b2 = (0 <= x) && (x <= WIDTH) && (B_BOT <= y ) && (y <= (B_BOT + BOARDER_WIDTH));
     assign render_p1 = ((p1_left <= x) && (x <= p1_right)) && ((p1_top <= y) && (y <= p1_bottom));
     assign render_p2 = ((p2_left <= x) && (x <= p2_right)) && ((p2_top <= y) && (y <= p2_bottom));
-    
+    assign game_on = render_p1 || render_p2 || render_b1 || render_b2 || (render_ball);
     
     
     
@@ -212,11 +211,11 @@ module game_logic(
                 rgb <= 12'hFFF;
             
             else 
-                rgb <= 12'h000;
+                rgb <= 12'h109;
          
         
         end else begin
-            rgb <= 12'h000;
+            rgb <= 12'h109;
         end
     end
     
